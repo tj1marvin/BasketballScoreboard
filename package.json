@@ -1,0 +1,20 @@
+{
+  "name": "BasketballScoreboard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "expo": "^54.0.0",
+    "react": "18.2.0",
+    "react-native": "0.71.14"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "latest",
+    "@react-native/metro-config": "latest"
+  },
+  "scripts": {
+    "start": "expo start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
