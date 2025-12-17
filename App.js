@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppRegistry } from 'react-native';
-import App from './App';
-import { name as appName } from './app.json';
-
-AppRegistry.registerComponent(appName, () => App);
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
 
 // --- Constants ---
 const INITIAL_GAME_TIME = 12 * 60; // 12 minutes in seconds
@@ -186,211 +182,494 @@ const Scoreboard = () => {
     // --- Components ---
 
     const ScoreButton = ({ team, points, colorClass }) => (
-        <button
-            className={`w-16 h-16 text-3xl font-bold rounded-full shadow-md transition duration-150 border-4 border-current ${colorClass}`}
-            onClick={() => updateScore(team, points)}
+        <TouchableOpacity
+            style={[styles.scoreButton, { backgroundColor: colorClass }]}
+            onPress={() => updateScore(team, points)}
         >
-            +{points}
-        </button>
+            <Text style={styles.scoreButtonText}>+{points}</Text>
+        </TouchableOpacity>
     );
 
     const TimerButton = ({ title, onClick, bgColorClass, widthClass = 'w-1/3' }) => (
-        <button
-            className={`px-4 py-2 rounded-lg font-bold shadow-md transition duration-150 ${bgColorClass} ${widthClass} text-sm`}
-            onClick={onClick}
+        <TouchableOpacity
+            style={[
+                styles.timerButton,
+                { backgroundColor: bgColorClass },
+                widthClass === 'w-1/3' ? styles.timerButtonThird : styles.timerButtonAuto
+            ]}
+            onPress={onClick}
         >
-            {title}
-        </button>
+            <Text style={styles.timerButtonText}>{title}</Text>
+        </TouchableOpacity>
     );
 
     // --- Render ---
     return (
-        <div className="min-h-screen flex flex-col items-center p-4 bg-gray-900">
-            <div className="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl p-6 space-y-6">
+        <View style={styles.container}>
+            <View style={styles.mainCard}>
 
                 {/* --- Timer & Shot Clock Display --- */}
-                <div className="flex flex-col items-center bg-gray-700 rounded-xl p-4 shadow-inner">
+                <View style={styles.timerSection}>
 
                     {/* Main Game Info (Timer + Shot Clock) */}
-                    <div className="flex justify-center items-end w-full max-w-lg mb-4 gap-8 md:gap-12">
-                        <div className="flex flex-col items-center">
-                            <div className="text-xl font-semibold text-yellow-400 mb-2">QUARTER {quarter}</div>
-                            <div className="font-mono text-6xl md:text-7xl lg:text-8xl font-bold text-red-500">{formatTime(remainingSeconds)}</div>
-                        </div>
+                    <View style={styles.gameInfo}>
+                        <View style={styles.quarterContainer}>
+                            <Text style={styles.quarterText}>QUARTER {quarter}</Text>
+                            <Text style={styles.timerText}>{formatTime(remainingSeconds)}</Text>
+                        </View>
                         {/* SHOT CLOCK DISPLAY */}
-                        <div className="flex flex-col items-center">
-                            <div className="text-lg font-semibold text-gray-400 mb-2">SHOT CLOCK</div>
-                            <div className={`font-mono text-5xl md:text-6xl font-bold ${shotClockSeconds <= 5 ? 'text-red-500' : 'text-orange-400'}`}>
+                        <View style={styles.shotClockContainer}>
+                            <Text style={styles.shotClockLabel}>SHOT CLOCK</Text>
+                            <Text style={[styles.shotClockText, shotClockSeconds <= 5 ? styles.shotClockRed : styles.shotClockOrange]}>
                                 {shotClockSeconds}
-                            </div>
-                        </div>
-                    </div>
+                            </Text>
+                        </View>
+                    </View>
 
                     {/* Main Timer Controls */}
-                    <div className="flex flex-wrap justify-center gap-3 mt-3 w-full">
+                    <View style={styles.timerControls}>
                         <TimerButton
                             title={isRunning ? 'PAUSE' : 'START'}
                             onClick={startPauseTimer}
-                            bgColorClass={isRunning ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
-                            widthClass="w-auto px-6"
+                            bgColorClass={isRunning ? '#ea580c' : '#16a34a'}
                         />
                         <TimerButton
                             title="RESET TIMER"
                             onClick={resetGameTimer}
-                            bgColorClass="bg-red-600 hover:bg-red-700"
-                            widthClass="w-auto px-6"
+                            bgColorClass="#dc2626"
                         />
                         <TimerButton
                             title={quarter >= 4 && remainingSeconds === 0 ? 'END GAME / RESET' : 'NEXT PERIOD'}
                             onClick={nextQuarter}
-                            bgColorClass="bg-blue-600 hover:bg-blue-700"
-                            widthClass="w-auto px-6"
+                            bgColorClass="#2563eb"
                         />
-                    </div>
+                    </View>
 
                     {/* Shot Clock Controls */}
-                    <div className="flex flex-wrap justify-center gap-3 mt-4 border-t border-gray-600 pt-4 w-full">
+                    <View style={styles.shotClockControls}>
                         <TimerButton
                             title={isShotClockRunning ? 'SHOT PAUSE' : 'SHOT START'}
                             onClick={startPauseShotClock}
-                            bgColorClass={isShotClockRunning ? 'bg-gray-600 hover:bg-gray-700' : 'bg-orange-600 hover:bg-orange-700'}
-                            widthClass="w-1/4"
+                            bgColorClass={isShotClockRunning ? '#4b5563' : '#ea580c'}
                         />
                         <TimerButton
                             title="RESET 24"
                             onClick={() => resetShotClock(SHOT_CLOCK_INITIAL)}
-                            bgColorClass="bg-yellow-500 hover:bg-yellow-600"
-                            widthClass="w-1/4"
+                            bgColorClass="#eab308"
                         />
                         <TimerButton
                             title="RESET 14"
                             onClick={() => resetShotClock(SHOT_CLOCK_RESET)}
-                            bgColorClass="bg-yellow-500 hover:bg-yellow-600"
-                            widthClass="w-1/4"
+                            bgColorClass="#eab308"
                         />
-                    </div>
-                </div>
+                    </View>
+                </View>
 
                 {/* --- Team Scores --- */}
-                <div className="grid grid-cols-2 gap-4">
+                <View style={styles.teamScores}>
                     {/* Team A */}
-                    <div className="bg-blue-900 rounded-xl p-4 text-center shadow-lg transform hover:scale-[1.01] transition duration-300">
-                        <input
-                            type="text"
+                    <View style={styles.teamCardA}>
+                        <TextInput
                             value={teamAName}
-                            onChange={(e) => setTeamAName(e.target.value)}
-                            className="text-3xl font-extrabold text-white bg-transparent w-full text-center mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-md p-1"
+                            onChangeText={setTeamAName}
+                            style={styles.teamNameInput}
                         />
-                        <div className="font-mono text-8xl text-blue-300 font-bold">{scoreA}</div>
-                        <div className="flex justify-center space-x-3 mt-4">
-                            <ScoreButton team="A" points={1} colorClass="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 border-blue-400 text-white" />
-                            <ScoreButton team="A" points={2} colorClass="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 border-blue-400 text-white" />
-                            <ScoreButton team="A" points={3} colorClass="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 border-blue-400 text-white" />
-                        </div>
-                    </div>
+                        <Text style={styles.scoreText}>{scoreA}</Text>
+                        <View style={styles.scoreButtons}>
+                            <ScoreButton team="A" points={1} colorClass="#2563eb" />
+                            <ScoreButton team="A" points={2} colorClass="#2563eb" />
+                            <ScoreButton team="A" points={3} colorClass="#2563eb" />
+                        </View>
+                    </View>
 
                     {/* Team B */}
-                    <div className="bg-red-900 rounded-xl p-4 text-center shadow-lg transform hover:scale-[1.01] transition duration-300">
-                        <input
-                            type="text"
+                    <View style={styles.teamCardB}>
+                        <TextInput
                             value={teamBName}
-                            onChange={(e) => setTeamBName(e.target.value)}
-                            className="text-3xl font-extrabold text-white bg-transparent w-full text-center mb-4 focus:outline-none focus:ring-2 focus:ring-red-400 rounded-md p-1"
+                            onChangeText={setTeamBName}
+                            style={styles.teamNameInput}
                         />
-                        <div className="font-mono text-8xl text-red-300 font-bold">{scoreB}</div>
-                        <div className="flex justify-center space-x-3 mt-4">
-                            <ScoreButton team="B" points={1} colorClass="bg-red-600 hover:bg-red-700 active:bg-red-800 border-red-400 text-white" />
-                            <ScoreButton team="B" points={2} colorClass="bg-red-600 hover:bg-red-700 active:bg-red-800 border-red-400 text-white" />
-                            <ScoreButton team="B" points={3} colorClass="bg-red-600 hover:bg-red-700 active:bg-red-800 border-red-400 text-white" />
-                        </div>
-                    </div>
-                </div>
+                        <Text style={styles.scoreText}>{scoreB}</Text>
+                        <View style={styles.scoreButtons}>
+                            <ScoreButton team="B" points={1} colorClass="#dc2626" />
+                            <ScoreButton team="B" points={2} colorClass="#dc2626" />
+                            <ScoreButton team="B" points={3} colorClass="#dc2626" />
+                        </View>
+                    </View>
+                </View>
 
                 {/* Score Management Buttons */}
-                <div className="flex justify-center gap-4 pt-4">
+                <View style={styles.managementButtons}>
                     <TimerButton
                         title="EDIT SCORES"
                         onClick={openEditModal}
-                        bgColorClass="bg-indigo-500 hover:bg-indigo-600"
-                        widthClass="w-auto px-8 py-3"
+                        bgColorClass="#6366f1"
                     />
                     <TimerButton
                         title="RESET SCORES (0-0)"
                         onClick={resetScores}
-                        bgColorClass="bg-gray-500 hover:bg-gray-600"
-                        widthClass="w-auto px-8 py-3"
+                        bgColorClass="#6b7280"
                     />
-                </div>
+                </View>
 
                 {/* --- Timeout Timer Panel --- */}
-                <div className="flex flex-col items-center bg-gray-700 rounded-xl p-4 shadow-inner mt-6">
-                    <div className="text-2xl font-bold text-teal-400 mb-3">TIMEOUT / BREAK TIMER</div>
-                    <div className="font-mono text-5xl text-teal-300 font-bold">{formatTime(timeoutSeconds)}</div>
-                    <div className="flex flex-wrap justify-center gap-3 mt-3 w-full">
+                <View style={styles.timeoutPanel}>
+                    <Text style={styles.timeoutTitle}>TIMEOUT / BREAK TIMER</Text>
+                    <Text style={styles.timeoutText}>{formatTime(timeoutSeconds)}</Text>
+                    <View style={styles.timeoutControls}>
                         <TimerButton
                             title={isTimeoutRunning ? 'PAUSE' : 'START'}
                             onClick={startPauseTimeout}
-                            bgColorClass={isTimeoutRunning ? 'bg-gray-600 hover:bg-gray-700' : 'bg-teal-600 hover:bg-teal-700'}
-                            widthClass="w-2/5"
+                            bgColorClass={isTimeoutRunning ? '#4b5563' : '#0d9488'}
                         />
                         <TimerButton
                             title="RESET 60s"
                             onClick={resetTimeout}
-                            bgColorClass="bg-teal-600 hover:bg-teal-700"
-                            widthClass="w-2/5"
+                            bgColorClass="#0d9488"
                         />
-                    </div>
-                </div>
-            </div>
+                    </View>
+                </View>
+            </View>
 
-            {/* --- Edit Score Modal (Adapted to Tailwind/React) --- */}
-            <div
-                className={`fixed inset-0 items-center justify-center transition-opacity duration-300 ${isEditModalVisible ? 'flex bg-black bg-opacity-70' : 'hidden'}`}
+            {/* --- Edit Score Modal --- */}
+            <Modal
+                visible={isEditModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setIsEditModalVisible(false)}
             >
-                <div className="bg-gray-800 rounded-xl p-8 w-11/12 max-w-md shadow-2xl border-t-4 border-indigo-500 text-white">
-                    <h2 className="text-2xl font-bold mb-6 text-indigo-400">Edit Scores Manually</h2>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Edit Scores Manually</Text>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-blue-300">{teamAName} Score</label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={tempScoreA}
-                                onChange={(e) => setTempScoreA(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-red-300">{teamBName} Score</label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={tempScoreB}
-                                onChange={(e) => setTempScoreB(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg"
-                            />
-                        </div>
-                    </div>
+                        <View style={styles.modalInputs}>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>{teamAName} Score</Text>
+                                <TextInput
+                                    keyboardType="numeric"
+                                    value={tempScoreA.toString()}
+                                    onChangeText={(text) => setTempScoreA(text)}
+                                    style={styles.textInput}
+                                />
+                            </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>{teamBName} Score</Text>
+                                <TextInput
+                                    keyboardType="numeric"
+                                    value={tempScoreB.toString()}
+                                    onChangeText={(text) => setTempScoreB(text)}
+                                    style={styles.textInput}
+                                />
+                            </View>
+                        </View>
 
-                    <div className="flex justify-end space-x-4 mt-8">
-                        <button
-                            onClick={() => setIsEditModalVisible(false)}
-                            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold transition duration-150"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={applyEditedScores}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold transition duration-150"
-                        >
-                            Apply Scores
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => setIsEditModalVisible(false)}
+                            >
+                                <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.applyButton]}
+                                onPress={applyEditedScores}
+                            >
+                                <Text style={styles.modalButtonText}>Apply Scores</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#111827',
+        padding: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    mainCard: {
+        width: '100%',
+        maxWidth: 800,
+        backgroundColor: '#1f2937',
+        borderRadius: 16,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    timerSection: {
+        backgroundColor: '#374151',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+    },
+    gameInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        width: '100%',
+        marginBottom: 16,
+    },
+    quarterContainer: {
+        alignItems: 'center',
+    },
+    quarterText: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#fbbf24',
+        marginBottom: 8,
+    },
+    timerText: {
+        fontFamily: 'monospace',
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#ef4444',
+    },
+    shotClockContainer: {
+        alignItems: 'center',
+    },
+    shotClockLabel: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#9ca3af',
+        marginBottom: 8,
+    },
+    shotClockText: {
+        fontFamily: 'monospace',
+        fontSize: 40,
+        fontWeight: 'bold',
+    },
+    shotClockOrange: {
+        color: '#fb923c',
+    },
+    shotClockRed: {
+        color: '#ef4444',
+    },
+    timerControls: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginTop: 12,
+        width: '100%',
+    },
+    shotClockControls: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#4b5563',
+        width: '100%',
+    },
+    teamScores: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 24,
+    },
+    teamCardA: {
+        flex: 1,
+        backgroundColor: '#1e3a8a',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        marginHorizontal: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    teamCardB: {
+        flex: 1,
+        backgroundColor: '#991b1b',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        marginHorizontal: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    teamNameInput: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#ffffff',
+        backgroundColor: 'transparent',
+        textAlign: 'center',
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#3b82f6',
+        borderRadius: 8,
+        padding: 8,
+        width: '100%',
+    },
+    scoreText: {
+        fontFamily: 'monospace',
+        fontSize: 64,
+        fontWeight: 'bold',
+        color: '#93c5fd',
+        marginBottom: 16,
+    },
+    scoreButtons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
+    },
+    scoreButton: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+        borderWidth: 4,
+        borderColor: '#ffffff',
+    },
+    scoreButtonText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#ffffff',
+    },
+    managementButtons: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 16,
+        marginTop: 16,
+    },
+    timeoutPanel: {
+        backgroundColor: '#374151',
+        borderRadius: 12,
+        padding: 16,
+        alignItems: 'center',
+        marginTop: 24,
+    },
+    timeoutTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#14b8a6',
+        marginBottom: 12,
+    },
+    timeoutText: {
+        fontFamily: 'monospace',
+        fontSize: 40,
+        fontWeight: 'bold',
+        color: '#5eead4',
+    },
+    timeoutControls: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 12,
+        marginTop: 12,
+        width: '100%',
+    },
+    timerButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+    },
+    timerButtonThird: {
+        flex: 1,
+    },
+    timerButtonAuto: {
+        minWidth: 120,
+    },
+    timerButtonText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        textAlign: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#1f2937',
+        borderRadius: 12,
+        padding: 24,
+        width: '90%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+        borderTopWidth: 4,
+        borderTopColor: '#6366f1',
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#a78bfa',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    modalInputs: {
+        marginBottom: 24,
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#93c5fd',
+        marginBottom: 8,
+    },
+    textInput: {
+        backgroundColor: '#374151',
+        borderWidth: 1,
+        borderColor: '#4b5563',
+        borderRadius: 8,
+        padding: 12,
+        color: '#ffffff',
+        fontSize: 18,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+    },
+    modalButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        minWidth: 100,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#6b7280',
+    },
+    applyButton: {
+        backgroundColor: '#4f46e5',
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#ffffff',
+    },
+});
 
 export default Scoreboard;
